@@ -3,6 +3,7 @@ package com.lldproject.ecommercewebsite.controllers;
 import com.lldproject.ecommercewebsite.dtos.CategoryDto;
 import com.lldproject.ecommercewebsite.dtos.ProductDto;
 import com.lldproject.ecommercewebsite.exceptions.ProductNotFoundException;
+import com.lldproject.ecommercewebsite.models.Category;
 import com.lldproject.ecommercewebsite.models.Product;
 import com.lldproject.ecommercewebsite.services.IProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,35 +15,72 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@RequestMapping("/products")
 public class ProductController {
     @Autowired
     private IProductService productService;
-    @GetMapping("/products")
-    public List<ProductDto> getAllProducts() {
-       List<Product> products = productService.getAllProducts();
-        return null;
+    @GetMapping
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
+        List<ProductDto> productDtos = new ArrayList<>();
+        List<Product> products = productService.getAllProducts();
+        if(products!=null){
+           for( Product product:products){
+               ProductDto productDto = from(product);
+               productDtos.add(productDto);
+           }
+           return new ResponseEntity<>(productDtos, HttpStatus.OK);
+       }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping("/products/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
         if(id<1){
-            //throw new IllegalArgumentException("ID should be greater than 0");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            throw new IllegalArgumentException("ID should be greater than 0");
         }
         Product product = productService.getProductById(id);
         if(product==null){
-            //throw new ProductNotFoundException("Product not found");
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ProductNotFoundException("Product not found");
         }
         ProductDto productDto = from(product);
         return new ResponseEntity<>(productDto, HttpStatus.OK);
     }
 
-    @PostMapping("/products")
+    @PostMapping
     public ProductDto createProduct(@RequestBody ProductDto productDto) {
+
         return productDto;
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
+        if(id<1){
+            throw new IllegalArgumentException("ID should be greater than 0");
+        }
+        Product product = from(productDto);
+        Product responseProduct = productService.updateProduct(product, id);
+        if(responseProduct!=null){
+            return new ResponseEntity<>(from(responseProduct), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private Product from(ProductDto productDto){
+        Product product = new Product();
+        product.setId(productDto.getId());
+        product.setName(productDto.getName());
+        product.setDescription(productDto.getDescription());
+        product.setPrice(productDto.getPrice());
+        product.setImageUrl(productDto.getImageUrl());
+        if(productDto.getCategory()!=null){
+            Category category = new Category();
+            category.setId(productDto.getCategory().getId());
+            category.setName(productDto.getCategory().getName());
+            category.setDescription(productDto.getCategory().getDescription());
+            product.setCategory(category);
+        }
+        return product;
+    }
     private ProductDto from(Product  product) {
         ProductDto productDto = new ProductDto();
         productDto.setId(product.getId());
