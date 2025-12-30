@@ -65,6 +65,18 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ProductDto> deleteProduct(@PathVariable Long id) {
+        if(id<1){
+            throw new IllegalArgumentException("ID should be greater than 0");
+        }
+        Product product = productService.deleteProduct(id);
+        if(product!=null){
+            return new ResponseEntity<>(from(product), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     private Product from(ProductDto productDto){
         Product product = new Product();
         product.setId(productDto.getId());
